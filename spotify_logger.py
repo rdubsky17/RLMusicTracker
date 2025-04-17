@@ -4,6 +4,17 @@ from datetime import datetime
 import spotipy
 from spotipy.oauth2 import SpotifyOAuth
 from zoneinfo import ZoneInfo
+import os
+import sys
+
+def get_runtime_path(filename_or_folder):
+    if getattr(sys, 'frozen', False):
+        return os.path.join(os.path.dirname(sys.executable), filename_or_folder)
+    return os.path.abspath(filename_or_folder)
+
+CLIENT_ID = "9783d7914a9844c281c64548e1eb3ae3" # ← Replace with yours
+CLIENT_SECRET = "28ba6ef15d5b40eea1cf5e9779c6fa9b" # ← Replace with yours
+
 
 def last_logged_track(csv_file):
     if os.path.exists(csv_file):
@@ -14,13 +25,13 @@ def last_logged_track(csv_file):
     return None
 
 
-def log_tracks(csv_file="spotify_log.csv", limit=20):
+def log_tracks(csv_file= get_runtime_path("spotify_log.csv"), limit=20): # Limit is the amount of songs per api call, does not have much effect unless < 5
     SPOTIFY_SCOPE = "user-read-recently-played user-read-playback-state"
     REDIRECT_URI = "http://127.0.0.1:8888/callback"
 
     sp = spotipy.Spotify(auth_manager=SpotifyOAuth(
-        client_id="9783d7914a9844c281c64548e1eb3ae3",         # ← Replace with yours
-        client_secret="28ba6ef15d5b40eea1cf5e9779c6fa9b", # ← Replace with yours
+        client_id= CLIENT_ID,   
+        client_secret= CLIENT_SECRET, 
         redirect_uri=REDIRECT_URI,
         scope=SPOTIFY_SCOPE
     ))
@@ -52,8 +63,7 @@ def log_tracks(csv_file="spotify_log.csv", limit=20):
             "track": name
         }
 
-    # 2. Get currently playing track (if any)
-    try:
+    try: # tries to get currently playing track
         current = sp.current_user_playing_track()
         if current and current["is_playing"]:
             track = current["item"]
@@ -77,10 +87,9 @@ def log_tracks(csv_file="spotify_log.csv", limit=20):
         for played_at, data in sorted(entries.items()):
             writer.writerow([played_at, data["timestamp"], data["artist"], data["track"]])
 
-    print(f"✅ Logged {len(entries)} track(s) to {csv_file}")
+    return (f"Logged {len(entries)} track(s) to {csv_file}")
 
-if __name__ == "__main__":
-    log_tracks("RLTracker\spotify_log.csv", 50)
+
 
 
     
